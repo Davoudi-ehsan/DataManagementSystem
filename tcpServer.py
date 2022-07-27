@@ -3,6 +3,9 @@ import socketserver
 import appLayer
 import time
 
+AUTHORIZED_CLIENTS = []
+AUTHENTICATED_CLIENTS = []
+
 
 class SocketServer:
     def __init__(self, _port):
@@ -30,49 +33,48 @@ class MyHandler(socketserver.BaseRequestHandler):
                 self.serverRequest = bytearray()
             _dataReceived = self.request.recv(1024)
             if not _dataReceived:
-                self.appLayer.disconnectClient()
-                logging.warn('client address %s disconnected' % _clientAddress)
+                _response = self.appLayer.disconnectClient(
+                    400, 'CLIENT_DISCONNECTION')
                 break
             logging.info('client address %s sent %i bytes' %
                          (_clientAddress, _dataReceived.__len__()))
-            if not self.appLayer.AUTHORIZED_CLIENTS.__contains__(_clientAddress):
-                if not self.appLayer.AUTHENTICATED_CLIENTS.__contains__(_clientAddress):
+            # TODO set timeout for server requests
+            if not any(x[0] for x in AUTHORIZED_CLIENTS if x[0] == _clientAddress):
+                if not AUTHENTICATED_CLIENTS.__contains__(_clientAddress):
                     authentication_result = self.appLayer.authenticate(
                         _dataReceived)
-                    self.request.send(authentication_result[1])
-                    if not authentication_result[0]:
-                        logging.warn(
-                            'client address %s disconnected duo to AUTHENTICATION_FAILED' % _clientAddress)
+                    if any(x[1] for x in AUTHORIZED_CLIENTS if x[1] == self.appLayer.c_id):
+                        _response = self.appLayer.disconnectClient(
+                            400, 'AUTHENTICATION_FAILED')
+                        self.request.send(_response)
                         break
-                    logging.info('client address %s authenticated' %
-                                 _clientAddress)
+                    if not authentication_result[0]:
+                        _response = self.appLayer.disconnectClient(
+                            400, 'AUTHENTICATION_FAILED')
+                        self.request.send(_response)
+                        break
+                    self.request.send(authentication_result[1])
                     t0 = time.time()
                 elif (time.time() - t0) < 5.01:
                     authorization_result = self.appLayer.authorize(
                         _dataReceived)
-                    self.request.send(authorization_result[1])
                     if not authorization_result[0]:
-                        self.appLayer.disconnectClient()
-                        logging.warn(
-                            'client address %s disconnected duo to AUTHORIZATION_FAILED' % _clientAddress)
+                        _response = self.appLayer.disconnectClient(
+                            401, 'AUTHORIZATION_FAILED')
+                        self.request.send(_response)
                         break
-                    logging.info('client address %s authorized' %
-                                 _clientAddress)
+                    self.request.send(authorization_result[1])
                 else:
-                    _response = self.appLayer.makeResponse('ERROR', 408)
+                    _response = self.appLayer.disconnectClient(
+                        408, 'AUTHORIZATION_TIMEOUT')
                     self.request.send(_response)
-                    self.appLayer.disconnectClient()
-                    logging.warn(
-                        'client address %s disconnected duo to AUTHORIZATION_TIMEOUT' % _clientAddress)
                     break
             else:
                 _request = self.appLayer.extractReqData(_dataReceived)
                 if _request.__len__() == 0:
-                    _response = self.appLayer.makeResponse('ERROR', 406)
+                    _response = self.appLayer.disconnectClient(
+                        406, 'UNDIFIEND_REQUEST')
                     self.request.send(_response)
-                    self.appLayer.disconnectClient()
-                    logging.warn(
-                        'client address %s disconnected duo to UNDIFIEND_REQUEST' % _clientAddress)
                     break
                 _response = self.appLayer.makeResponse('CORRECT', 200)
                 self.request.send(_response)

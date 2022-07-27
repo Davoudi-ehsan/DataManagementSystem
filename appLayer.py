@@ -1,6 +1,8 @@
+import logging
 import dbHelper
 import json
 from datetime import datetime
+import tcpServer
 
 AUTH_NAK = 0x15
 AUTH_ACK = 0x06
@@ -14,8 +16,6 @@ VIF = {}
 
 class protocol:
     def __init__(self, _clientAddress):
-        self.AUTHORIZED_CLIENTS = []
-        self.AUTHENTICATED_CLIENTS = []
         self.clientAddress = _clientAddress
         self.c_id = []
         self.c_type = []
@@ -23,43 +23,44 @@ class protocol:
     def authenticate(self, _clientHeartBeat):
         _clientIdentity = self.extractAuthData(_clientHeartBeat)
         self.c_id = [
-            value[1] for value in _clientIdentity if value[0] == ('c_id')]
+            value[1] for value in _clientIdentity if value[0] == 'c_id']
         self.c_type = [
-            value[1] for value in _clientIdentity if value[0] == ('c_type')]
+            value[1] for value in _clientIdentity if value[0] == 'c_type']
         if self.c_id.__len__() > 0:
             _authenticated = True
             _response = self.makeResponse('AUTHENTICATION', self.c_id)
-            self.AUTHENTICATED_CLIENTS.append(self.clientAddress)
-        else:
-            _authenticated = False
-            _response = self.makeResponse('ERROR', 400)
-        return _authenticated, _response
+            tcpServer.AUTHENTICATED_CLIENTS.append(self.clientAddress)
+            logging.info('client address %s authenticated' %
+                         self.clientAddress)
+            return _authenticated, _response
+        _authenticated = False
+        return _authenticated, []
 
     def authorize(self, _clientStablishment):
         _clientVerification = self.extractAuthData(_clientStablishment)
         key = [
-            value[1] for value in _clientVerification if value[0] == ('key')]
+            value[1] for value in _clientVerification if value[0] == 'key']
         if key.__len__() > 0:
             if key[0] == KEY:
                 _authorized = True
                 _response = self.makeResponse('CORRECT', 202)
-                self.AUTHENTICATED_CLIENTS.remove(self.clientAddress)
-                self.AUTHORIZED_CLIENTS.append(self.clientAddress)
+                tcpServer.AUTHENTICATED_CLIENTS.remove(self.clientAddress)
+                tcpServer.AUTHORIZED_CLIENTS.append(
+                    (self.clientAddress, self.c_id))
                 self.read_dbInfo()
+                _db = dbHelper.dbhelper()
                 query = 'insert into %(table)s ' \
                     'values (%(val_1)i, %(val_2)i, "%(val_3)s", %(val_4)d, %(val_5)i)' \
-                        % {"table": self.DBtalbeNames[2], "val_1": self.int_to_BCDint(self.c_id[0]),
+                        % {"table": self.DBtalbeNames[3], "val_1": self.int_to_BCDint(self.c_id[0]),
                             "val_2": self.c_type[0], "val_3": self.clientAddress, "val_4": 1,
                            "val_5": datetime.timestamp(datetime.now())}
-                _db = dbHelper.dbhelper()
                 _request = _db.executeQuery(query)
-            else:
-                _authorized = False
-                _response = self.makeResponse('ERROR', 401)
-        else:
-            _authorized = False
-            _response = self.makeResponse('ERROR', 401)
-        return _authorized, _response
+
+                logging.info('client address %s authorized' %
+                             self.clientAddress)
+                return _authorized, _response
+        _authorized = False
+        return _authorized, []
 
     def extractAuthData(self, _clientPacket):
         _validData = []
@@ -153,15 +154,21 @@ class protocol:
             _value = _value // 16
         return int(_output[::-1])
 
-    def disconnectClient(self):
-        if self.AUTHORIZED_CLIENTS.__contains__(self.clientAddress):
-            self.AUTHORIZED_CLIENTS.remove(self.clientAddress)
+    def disconnectClient(self, _errorCode, _errorReason):
+        found_client = [x for x in tcpServer.AUTHORIZED_CLIENTS if x[0]
+                        == self.clientAddress]
+        if found_client.__len__() > 0:
+            tcpServer.AUTHORIZED_CLIENTS.remove(found_client[0])
             self.read_dbInfo()
             query = 'update %(table)s set %(column)s = %(value)d where %(condition)s = "%(condition_val)s"' \
-                % {"table": self.DBtalbeNames[2], "column": self.DBtables[self.DBtalbeNames[2]]['col_4'],
-                    "value": 0, "condition": self.DBtables[self.DBtalbeNames[2]]['col_3'],
+                % {"table": self.DBtalbeNames[3], "column": self.DBtables[self.DBtalbeNames[3]]['col_4'],
+                    "value": 0, "condition": self.DBtables[self.DBtalbeNames[3]]['col_3'],
                    "condition_val": self.clientAddress}
             _db = dbHelper.dbhelper()
             _request = _db.executeQuery(query)
-        elif self.AUTHENTICATED_CLIENTS.__contains__(self.clientAddress):
-            self.AUTHENTICATED_CLIENTS.remove(self.clientAddress)
+        elif tcpServer.AUTHENTICATED_CLIENTS.__contains__(self.clientAddress):
+            tcpServer.AUTHENTICATED_CLIENTS.remove(self.clientAddress)
+        _disconnectionReason = self.makeResponse('ERROR', _errorCode)
+        logging.warn(
+            'client address %s disconnected duo to %s' % (self.clientAddress, _errorReason))
+        return _disconnectionReason
