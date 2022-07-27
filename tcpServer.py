@@ -34,7 +34,7 @@ class MyHandler(socketserver.BaseRequestHandler):
             _dataReceived = self.request.recv(1024)
             if not _dataReceived:
                 _response = self.appLayer.disconnectClient(
-                    400, 'CLIENT_DISCONNECTION')
+                    204, 'CLIENT_DISCONNECTION')
                 break
             logging.info('client address %s sent %i bytes' %
                          (_clientAddress, _dataReceived.__len__()))

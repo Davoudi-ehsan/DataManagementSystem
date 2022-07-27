@@ -1,4 +1,5 @@
 import logging
+from tkinter.messagebox import NO
 import dbHelper
 import json
 from datetime import datetime
@@ -51,11 +52,40 @@ class protocol:
                 _db = dbHelper.dbhelper()
                 query = 'insert into %(table)s ' \
                     'values (%(val_1)i, %(val_2)i, "%(val_3)s", %(val_4)d, %(val_5)i)' \
-                        % {"table": self.DBtalbeNames[3], "val_1": self.int_to_BCDint(self.c_id[0]),
-                            "val_2": self.c_type[0], "val_3": self.clientAddress, "val_4": 1,
-                           "val_5": datetime.timestamp(datetime.now())}
+                        % {
+                            "table": self.DBtalbeNames[3],
+                            "val_1": self.int_to_BCDint(self.c_id[0]),
+                            "val_2": self.c_type[0],
+                            "val_3": self.clientAddress,
+                            "val_4": 1,
+                            "val_5": datetime.timestamp(datetime.now())
+                        }
                 _request = _db.executeQuery(query)
-
+                query = 'select * from %(table)s where %(condition)s = %(condition_val)i' \
+                    % {
+                        "table": self.DBtalbeNames[2],
+                        "condition": self.DBtables[self.DBtalbeNames[2]]['col_1'],
+                        "condition_val": self.int_to_BCDint(self.c_id[0])
+                    }
+                if _db.selectData(query) is not None:
+                    query = 'delete from %(table)s where %(condition)s = %(condition_val)i' \
+                        % {
+                            "table": self.DBtalbeNames[2],
+                            "condition": self.DBtables[self.DBtalbeNames[2]]['col_1'],
+                            "condition_val": self.int_to_BCDint(self.c_id[0])
+                        }
+                    _request = _db.executeQuery(query)
+                query = 'insert into %(table)s ' \
+                    'values (%(val_1)i, %(val_2)i, "%(val_3)s", "%(val_4)s", %(val_5)i)' \
+                        % {
+                            "table": self.DBtalbeNames[2],
+                            "val_1": self.int_to_BCDint(self.c_id[0]),
+                            "val_2": self.c_type[0],
+                            "val_3": self.clientAddress,
+                            "val_4": 'UNKNOWN',
+                            "val_5": datetime.timestamp(datetime.now())
+                        }
+                _request = _db.executeQuery(query)
                 logging.info('client address %s authorized' %
                              self.clientAddress)
                 return _authorized, _response
@@ -154,6 +184,14 @@ class protocol:
             _value = _value // 16
         return int(_output[::-1])
 
+    # def BCDint_to_int(self, _value):
+    #     _sum = 0
+    #     digits = len(str(_value))
+    #     for chr in str(_value)[::-1]:
+    #         power = int(str(_value)[::-1].index(chr))
+    #         _sum += int(chr) * 16 ^ power
+    #     return _sum
+
     def disconnectClient(self, _errorCode, _errorReason):
         found_client = [x for x in tcpServer.AUTHORIZED_CLIENTS if x[0]
                         == self.clientAddress]
@@ -161,9 +199,13 @@ class protocol:
             tcpServer.AUTHORIZED_CLIENTS.remove(found_client[0])
             self.read_dbInfo()
             query = 'update %(table)s set %(column)s = %(value)d where %(condition)s = "%(condition_val)s"' \
-                % {"table": self.DBtalbeNames[3], "column": self.DBtables[self.DBtalbeNames[3]]['col_4'],
-                    "value": 0, "condition": self.DBtables[self.DBtalbeNames[3]]['col_3'],
-                   "condition_val": self.clientAddress}
+                % {
+                    "table": self.DBtalbeNames[3],
+                    "column": self.DBtables[self.DBtalbeNames[3]]['col_4'],
+                    "value": 0,
+                    "condition": self.DBtables[self.DBtalbeNames[3]]['col_3'],
+                    "condition_val": self.clientAddress
+                }
             _db = dbHelper.dbhelper()
             _request = _db.executeQuery(query)
         elif tcpServer.AUTHENTICATED_CLIENTS.__contains__(self.clientAddress):

@@ -18,17 +18,21 @@ class dbhelper:
     def selectData(self, query):
         if self.cnx is None:
             return None
+        if not self.cnx.is_connected():
+            self.__init__()
         cursor = self.cnx.cursor()
         cursor.execute(query)
-        if cursor is None:
-            return None
         result = cursor.fetchall()
+        if result.__len__() == 0:
+            return None
         self.cnx.close()
         return result
 
     def executeQuery(self, query):
         if self.cnx is None:
             return None
+        if not self.cnx.is_connected():
+            self.__init__()
         cursor = self.cnx.cursor()
         cursor.execute(query)
         self.cnx.commit()
