@@ -2,6 +2,7 @@ import logging
 import socketserver
 import appLayer
 import time
+import messageFormation
 
 AUTHORIZED_CLIENTS = []
 AUTHENTICATED_CLIENTS = []
@@ -70,11 +71,11 @@ class MyHandler(socketserver.BaseRequestHandler):
                     self.request.send(_response)
                     break
             else:
-                _request = self.appLayer.extractReqData(_dataReceived)
+                _request = messageFormation.extractReqData(_dataReceived)
                 if _request.__len__() == 0:
                     _response = self.appLayer.disconnectClient(
                         406, 'UNDIFIEND_REQUEST')
                     self.request.send(_response)
                     break
-                _response = self.appLayer.makeResponse('CORRECT', 200)
+                _response = messageFormation.makeResponse('CORRECT', 200)
                 self.request.send(_response)
