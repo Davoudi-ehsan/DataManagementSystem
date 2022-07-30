@@ -18,13 +18,12 @@ class protocol:
         self.c_id = []
         self.c_type = []
 
-    def authenticate(self, _clientHeartBeat):
-        _clientIdentity = messageFormation.extractAuthData(_clientHeartBeat)
+    def authenticate(self, _clientPacket):
         self.c_id = [
-            value[1] for value in _clientIdentity if value[0] == 'c_id']
+            value[1] for value in _clientPacket if value[0] == 'c_id']
         self.c_type = [
-            value[1] for value in _clientIdentity if value[0] == 'c_type']
-        if self.c_id.__len__() > 0:
+            value[1] for value in _clientPacket if value[0] == 'c_type']
+        if self.c_id.__len__() > 0 and self.c_type.__len__() > 0:
             _authenticated = True
             _response = messageFormation.makeResponse(
                 'AUTHENTICATION', self.c_id)
@@ -35,11 +34,9 @@ class protocol:
         _authenticated = False
         return _authenticated, []
 
-    def authorize(self, _clientStablishment):
-        _clientVerification = messageFormation.extractAuthData(
-            _clientStablishment)
+    def authorize(self, _clientPacket):
         key = [
-            value[1] for value in _clientVerification if value[0] == 'key']
+            value[1] for value in _clientPacket if value[0] == 'key']
         if key.__len__() > 0:
             if key[0] == KEY:
                 _authorized = True
@@ -83,19 +80,8 @@ class protocol:
                             "condition_val": self.int_to_BCDint(self.c_id[0])
                         }
                     _request = _db.executeQuery(query)
-                    _response = messageFormation.makeResponse('CORRECT', 202)
+                    _response = messageFormation.makeResponse('SUCCESS', 202)
                 else:
-                    query = 'insert into %(table)s ' \
-                        'values (%(val_1)i, %(val_2)i, "%(val_3)s", "%(val_4)s", %(val_5)i)' \
-                            % {
-                                "table": self.DBtalbeNames[2],
-                                "val_1": self.int_to_BCDint(self.c_id[0]),
-                                "val_2": self.c_type[0],
-                                "val_3": self.clientAddress,
-                                "val_4": 'UNKNOWN',
-                                "val_5": datetime.timestamp(datetime.now())
-                            }
-                    _request = _db.executeQuery(query)
                     _response = messageFormation.makeResponse(
                         'DECLARATION', self.c_type[0])
                 logging.info('client address %s authorized' %
@@ -143,7 +129,7 @@ class protocol:
         elif tcpServer.AUTHENTICATED_CLIENTS.__contains__(self.clientAddress):
             tcpServer.AUTHENTICATED_CLIENTS.remove(self.clientAddress)
         _disconnectionReason = messageFormation.makeResponse(
-            'ERROR', _errorCode)
+            'FAILURE', _errorCode)
         logging.warn(
             'client address %s disconnected duo to %s' % (self.clientAddress, _errorReason))
         return _disconnectionReason
