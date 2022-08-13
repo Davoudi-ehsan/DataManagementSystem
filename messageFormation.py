@@ -1,92 +1,18 @@
+import json
 
-
-PACKET_FLAG = 0x7e
 SERVER_KEY = 0x1987
-
-TRANSMISSION_DIRECTION = {
-    'StoC': 0x81,
-    'CtoS': 0x01
-}
-
-APDU = {
-    'heartbeat': 0xDD,
-    'aarq': 0x60,
-    'aare': 0x61,
-    'get-request': 0xc0,
-    'set-request': 0xc1,
-    'event-notification-request': 0xc2,
-    'action-request': 0xc3,
-    'get-response': 0xc4,
-    'set-response': 0xc5,
-    'event-notification-response': 0xc6,
-    'action-response': 0xc7,
-    'error': 0xe1
-}
-
-HEARTBEAT = {
-    'client-id': 0xa1,
-    'client-type': 0xa2
-}
-
-AUTHORIZATION = {
-    'authorisation-value': 0xa3
-}
-
-Get_Request = {
-    'get-request-normal': 1,
-    'get-request-with-list': 2
-}
-
-Get_Response = {
-    'get-Response-normal': 1,
-    'get-response-with-list': 2
-}
-
-Set_Request = {
-    'set-request-normal': 1,
-    'set-request-with-list': 2
-}
-
-Set_Response = {
-    'set-Response-normal': 1,
-    'set-response-with-list': 2
-}
-
-Action_Request = {
-    'action-request-normal': 1,
-    'action-request-with-list': 2
-}
-
-Action_Response = {
-    'action-Response-normal': 1,
-    'action-response-with-list': 2
-}
-
-Data_type = {
-    'null': 0,
-    'array': 1,
-    'structure': 2,
-    'boolean': 3,
-    'string': 4,
-    'integer': 5,
-    'float': 6
-}
-
-Result = {
-    'success': 0,
-    'object-undefined': 1,
-    'other-reason': 2
-}
 
 
 def extractReqData(_clientPacket):
+    PROTOCOLS = read_protocolInfo('protocols')
     _packetBytes_count = _clientPacket.__len__()
     # check if recieved bytes less than 2 bytes
     if _packetBytes_count < 2:
         return None, []
     _FLAG = _clientPacket[0]
     # check recieved bytes start and end with _FLAG byte
-    if _FLAG != PACKET_FLAG:
+    if _FLAG != int(
+            PROTOCOLS['TORAL']['packet-format']['packet-flags']['start']['hex-index'], 16):
         return None, []
     if _clientPacket[_packetBytes_count-1] != _FLAG:
         return None
@@ -98,21 +24,29 @@ def extractReqData(_clientPacket):
     if (_clientPacket[_packetBytes_count-2] != checksum(_dataPacket)):
         return None, []
     # check if the transmission direction byte is correct
-    if _clientPacket[2] != TRANSMISSION_DIRECTION['CtoS']:
+    if _clientPacket[2] != int(
+            PROTOCOLS['TORAL']['packet-format']['transmission-direction']['CtoS']['hex-index'], 16):
         return None, []
-    if _dataPacket[0] == APDU['heartbeat']:
+    if _dataPacket[0] == int(
+            PROTOCOLS['TORAL']['packet-format']['APDU']['HEARTBEAT']['hex_index'], 16):
         return 'AUTHENTICATION', _dataPacket[1:]
-    elif _dataPacket[0] == APDU['aare']:
+    elif _dataPacket[0] == int(
+            PROTOCOLS['TORAL']['packet-format']['APDU']['AARE']['hex_index'], 16):
         return 'AUTHORIZATION', _dataPacket[1:]
-    elif _dataPacket[0] == APDU['get-response']:
+    elif _dataPacket[0] == int(
+            PROTOCOLS['TORAL']['packet-format']['APDU']['GET-response']['hex_index'], 16):
         return 'GET_RES', _dataPacket[1:]
-    elif _dataPacket[0] == APDU['set-response']:
+    elif _dataPacket[0] == int(
+            PROTOCOLS['TORAL']['packet-format']['APDU']['SET-response']['hex_index'], 16):
         return 'SET_RES', _dataPacket[1:]
-    elif _dataPacket[0] == APDU['action-response']:
+    elif _dataPacket[0] == int(
+            PROTOCOLS['TORAL']['packet-format']['APDU']['ACTION-response']['hex_index'], 16):
         return 'ACT_RES', _dataPacket[1:]
-    elif _dataPacket[0] == APDU['event-notification-response']:
+    elif _dataPacket[0] == int(
+            PROTOCOLS['TORAL']['packet-format']['APDU']['EVENT-NOTIFICATION-response']['hex_index'], 16):
         return 'NOTIFICATION', _dataPacket[1:]
-    elif _dataPacket[0] == APDU['error']:
+    elif _dataPacket[0] == int(
+            PROTOCOLS['TORAL']['packet-format']['APDU']['Error']['hex_index'], 16):
         return 'ERROR', _dataPacket[1:]
     else:
         return None, []
@@ -120,16 +54,25 @@ def extractReqData(_clientPacket):
 
 def makeMessagePacket(request):
     def request_frame(_input):
+        PROTOCOLS = read_protocolInfo('protocols')
         _frame = bytearray()
-        _frame.append(PACKET_FLAG)
+        _frame.append(int(
+            PROTOCOLS['TORAL']['packet-format']['packet-flags']['start']['hex-index'], 16))
         _frame.append(0)
-        _frame.append(TRANSMISSION_DIRECTION['StoC'])
+        _frame.append(int(
+            PROTOCOLS['TORAL']['packet-format']['transmission-direction']['StoC']['hex-index'], 16))
         _frame += request(_input)
         _frame.append(checksum(_frame[3:_frame.__len__()]))
-        _frame.append(PACKET_FLAG)
+        _frame.append(int(
+            PROTOCOLS['TORAL']['packet-format']['packet-flags']['start']['hex-index'], 16))
         _frame[1] = _frame.__len__()-5
         return _frame
     return request_frame
+
+
+def read_protocolInfo(_requiredElement):
+    f = open('.env/protocol.json')
+    return json.load(f)[_requiredElement]
 
 
 def checksum(_dataPacket):
@@ -142,20 +85,25 @@ def checksum(_dataPacket):
 
 @makeMessagePacket
 def make_ERROR_message(_errorCode):
+    PROTOCOLS = read_protocolInfo('protocols')
     _errorFrame = bytearray()
-    _errorFrame.append(APDU['error'])
+    _errorFrame.append(int(
+        PROTOCOLS['TORAL']['packet-format']['APDU']['Error']['hex_index'], 16))
     _errorFrame += (_errorCode.to_bytes(2, 'big'))
     return _errorFrame
 
 
 def inspect_AUTHENTICATION_response(_dataFrame):
+    PROTOCOLS = read_protocolInfo('protocols')
     clientIdentity = {}
     i = 0
     while i < _dataFrame.__len__():
-        if _dataFrame[i] == HEARTBEAT['client-id']:
+        if _dataFrame[i] == int(
+                PROTOCOLS['TORAL']['packet-format']['APDU']['HEARTBEAT']['elements']['client-id']['hex_index'], 16):
             clientIdentity['c_id'] = int.from_bytes(_dataFrame[i+1:i+3], 'big')
             i += 3
-        elif _dataFrame[i] == HEARTBEAT['client-type']:
+        elif _dataFrame[i] == int(
+                PROTOCOLS['TORAL']['packet-format']['APDU']['HEARTBEAT']['elements']['client-type']['hex_index'], 16):
             clientIdentity['c_type'] = int(_dataFrame[i+1])
             i += 2
         else:
@@ -165,20 +113,32 @@ def inspect_AUTHENTICATION_response(_dataFrame):
 
 @makeMessagePacket
 def make_AUTHORIZATION_request(_input):
+    PROTOCOLS = read_protocolInfo('protocols')
     _reqFrame = bytearray()
-    _reqFrame.append(APDU['aarq'])
-    _reqFrame.append(AUTHORIZATION['authorisation-value'])
+    _reqFrame.append(int(
+        PROTOCOLS['TORAL']['packet-format']['APDU']['AARQ']['hex_index'], 16))
+    _reqFrame.append(int(
+        PROTOCOLS['TORAL']['packet-format']['APDU']['AARQ']['elements']['authorisation-value']['hex_index'], 16))
     _reqFrame += (_input ^ SERVER_KEY).to_bytes(2, 'big')
     return _reqFrame
 
 
 def inspect_AUTHORISATION_response(_dataFrame):
+    PROTOCOLS = read_protocolInfo('protocols')
     client_key = -1
     i = 0
     while i < _dataFrame.__len__():
-        if _dataFrame[i] == AUTHORIZATION['authorisation-value']:
+        if _dataFrame[i] == int(
+                PROTOCOLS['TORAL']['packet-format']['APDU']['AARE']['elements']['authorisation-value']['hex_index'], 16):
             client_key = int.from_bytes(_dataFrame[i+1:i+3], 'big')
             i += 3
         else:
             break
     return client_key
+
+
+@makeMessagePacket
+def make_Get_request(_getReqPara):
+    _reqFrame = bytearray()
+
+    return _reqFrame
