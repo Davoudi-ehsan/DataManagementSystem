@@ -109,7 +109,7 @@ class MyHandler(socketserver.BaseRequestHandler):
                         408, 'AUTHORIZATION_TIMEOUT')
                     self.request.send(_reaction)
                     return 'DISCONNECT_CLIENT'
-            case 'RESPONSE':
+            case _:
                 if not any(x[0] for x in AUTHORIZED_CLIENTS if x[0] == _clientAddress):
                     _reaction = self.appLayer.disconnectClient(
                         406, 'WRONG_RESPONSE')

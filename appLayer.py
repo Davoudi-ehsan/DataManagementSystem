@@ -81,9 +81,9 @@ class protocol:
                             "condition_val": self.int_to_BCDint(self.c_id)
                         }
                     _result = _db.executeQuery(query)
-                # else:
-                #     _request = messageFormation.makeResponse(
-                #         'DECLARATION', self.c_type[0])
+                else:
+                    _request = messageFormation.make_Get_request(
+                        [('configuration', 'local-connected-downstream-devices', 1)])
                 logging.info('client address %s authorized' %
                              self.clientAddress)
         return _authorized, _request

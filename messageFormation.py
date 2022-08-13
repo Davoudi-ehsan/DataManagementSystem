@@ -28,25 +28,25 @@ def extractReqData(_clientPacket):
             PROTOCOLS['TORAL']['packet-format']['transmission-direction']['CtoS']['hex-index'], 16):
         return None, []
     if _dataPacket[0] == int(
-            PROTOCOLS['TORAL']['packet-format']['APDU']['HEARTBEAT']['hex_index'], 16):
+            PROTOCOLS['TORAL']['packet-format']['APDU']['HEARTBEAT']['hex-index'], 16):
         return 'AUTHENTICATION', _dataPacket[1:]
     elif _dataPacket[0] == int(
-            PROTOCOLS['TORAL']['packet-format']['APDU']['AARE']['hex_index'], 16):
+            PROTOCOLS['TORAL']['packet-format']['APDU']['AARE']['hex-index'], 16):
         return 'AUTHORIZATION', _dataPacket[1:]
     elif _dataPacket[0] == int(
-            PROTOCOLS['TORAL']['packet-format']['APDU']['GET-response']['hex_index'], 16):
+            PROTOCOLS['TORAL']['packet-format']['APDU']['GET-response']['hex-index'], 16):
         return 'GET_RES', _dataPacket[1:]
     elif _dataPacket[0] == int(
-            PROTOCOLS['TORAL']['packet-format']['APDU']['SET-response']['hex_index'], 16):
+            PROTOCOLS['TORAL']['packet-format']['APDU']['SET-response']['hex-index'], 16):
         return 'SET_RES', _dataPacket[1:]
     elif _dataPacket[0] == int(
-            PROTOCOLS['TORAL']['packet-format']['APDU']['ACTION-response']['hex_index'], 16):
+            PROTOCOLS['TORAL']['packet-format']['APDU']['ACTION-response']['hex-index'], 16):
         return 'ACT_RES', _dataPacket[1:]
     elif _dataPacket[0] == int(
-            PROTOCOLS['TORAL']['packet-format']['APDU']['EVENT-NOTIFICATION-response']['hex_index'], 16):
+            PROTOCOLS['TORAL']['packet-format']['APDU']['EVENT-NOTIFICATION-response']['hex-index'], 16):
         return 'NOTIFICATION', _dataPacket[1:]
     elif _dataPacket[0] == int(
-            PROTOCOLS['TORAL']['packet-format']['APDU']['Error']['hex_index'], 16):
+            PROTOCOLS['TORAL']['packet-format']['APDU']['Error']['hex-index'], 16):
         return 'ERROR', _dataPacket[1:]
     else:
         return None, []
@@ -88,7 +88,7 @@ def make_ERROR_message(_errorCode):
     PROTOCOLS = read_protocolInfo('protocols')
     _errorFrame = bytearray()
     _errorFrame.append(int(
-        PROTOCOLS['TORAL']['packet-format']['APDU']['Error']['hex_index'], 16))
+        PROTOCOLS['TORAL']['packet-format']['APDU']['Error']['hex-index'], 16))
     _errorFrame += (_errorCode.to_bytes(2, 'big'))
     return _errorFrame
 
@@ -99,11 +99,11 @@ def inspect_AUTHENTICATION_response(_dataFrame):
     i = 0
     while i < _dataFrame.__len__():
         if _dataFrame[i] == int(
-                PROTOCOLS['TORAL']['packet-format']['APDU']['HEARTBEAT']['elements']['client-id']['hex_index'], 16):
+                PROTOCOLS['TORAL']['packet-format']['APDU']['HEARTBEAT']['elements']['client-id']['hex-index'], 16):
             clientIdentity['c_id'] = int.from_bytes(_dataFrame[i+1:i+3], 'big')
             i += 3
         elif _dataFrame[i] == int(
-                PROTOCOLS['TORAL']['packet-format']['APDU']['HEARTBEAT']['elements']['client-type']['hex_index'], 16):
+                PROTOCOLS['TORAL']['packet-format']['APDU']['HEARTBEAT']['elements']['client-type']['hex-index'], 16):
             clientIdentity['c_type'] = int(_dataFrame[i+1])
             i += 2
         else:
@@ -116,9 +116,9 @@ def make_AUTHORIZATION_request(_input):
     PROTOCOLS = read_protocolInfo('protocols')
     _reqFrame = bytearray()
     _reqFrame.append(int(
-        PROTOCOLS['TORAL']['packet-format']['APDU']['AARQ']['hex_index'], 16))
+        PROTOCOLS['TORAL']['packet-format']['APDU']['AARQ']['hex-index'], 16))
     _reqFrame.append(int(
-        PROTOCOLS['TORAL']['packet-format']['APDU']['AARQ']['elements']['authorisation-value']['hex_index'], 16))
+        PROTOCOLS['TORAL']['packet-format']['APDU']['AARQ']['elements']['authorisation-value']['hex-index'], 16))
     _reqFrame += (_input ^ SERVER_KEY).to_bytes(2, 'big')
     return _reqFrame
 
@@ -129,7 +129,7 @@ def inspect_AUTHORISATION_response(_dataFrame):
     i = 0
     while i < _dataFrame.__len__():
         if _dataFrame[i] == int(
-                PROTOCOLS['TORAL']['packet-format']['APDU']['AARE']['elements']['authorisation-value']['hex_index'], 16):
+                PROTOCOLS['TORAL']['packet-format']['APDU']['AARE']['elements']['authorisation-value']['hex-index'], 16):
             client_key = int.from_bytes(_dataFrame[i+1:i+3], 'big')
             i += 3
         else:
@@ -139,6 +139,37 @@ def inspect_AUTHORISATION_response(_dataFrame):
 
 @makeMessagePacket
 def make_Get_request(_getReqPara):
+    PROTOCOLS = read_protocolInfo('protocols')
+    OBJECTS = read_protocolInfo('objects')
+    _reqItemsLen = _getReqPara.__len__()
     _reqFrame = bytearray()
-
+    if _reqItemsLen == 0:
+        return None
+    elif _reqItemsLen == 1:
+        _obj, _item, _attr = _getReqPara[0]
+        _reqFrame.append(int(
+            PROTOCOLS['TORAL']['packet-format']['APDU']['GET-request']['hex-index'], 16))
+        _reqFrame.append(int(
+            PROTOCOLS['TORAL']['packet-format']['APDU']['GET-request']['types']['normal']['index']))
+        _reqFrame.append(int(
+            OBJECTS[_obj]['A']))
+        _reqFrame.append(int(
+            OBJECTS[_obj]['items'][_item]['B']))
+        _reqFrame.append(_attr)
+    else:
+        _reqFrame.append(int(
+            PROTOCOLS['TORAL']['packet-format']['APDU']['GET-request']['hex-index'], 16))
+        _reqFrame.append(int(
+            PROTOCOLS['TORAL']['packet-format']['APDU']['GET-request']['types']['with-list']['index']))
+        _reqFrame.append(_reqItemsLen)
+        for _obj, _item, _attr in _getReqPara:
+            _reqFrame.append(int(
+                OBJECTS[_obj]['A']))
+            _reqFrame.append(int(
+                OBJECTS[_obj]['items'][_item]['B']))
+            _reqFrame.append(_attr)
     return _reqFrame
+
+
+def inspect_GET_response(_dataFrame):
+    pass
