@@ -205,3 +205,41 @@ def inspect_GET_response(_dataFrame):
         # while i in range(_dataFrame.__len__()):
         #     pass
     return None
+
+
+def extract_dataResult(_rawData, _responseType):
+    DATA_RESULT = read_protocolInfo(['data-result'])
+    DATA_TYPE = read_protocolInfo(['data-type'])
+    _outputData = []
+    if _responseType == 'normal':
+        if _rawData[0] == int(DATA_RESULT['data']['index']):
+            _rawData, result = trim_dataByteArray(_rawData)
+            _outputData.append(result)
+        elif _rawData[0] == int(DATA_RESULT['data-access-result']['index']):
+            result = list(DATA_RESULT['data-access-result']['result'].keys())[
+                list(DATA_RESULT['data-access-result']['result'].values()).index(_rawData[1])]
+            _outputData.append(result)
+    elif _responseType == 'with-list':
+        resultItemsNumber = _rawData[0]
+        _rawData = _rawData[1:]
+        for i in range(resultItemsNumber):
+            LENGTH = _rawData.__len__()
+            if LENGTH > 1:
+                if _rawData[0] == int(DATA_RESULT['data']['index']):
+                    _rawData, result = trim_dataByteArray(_rawData)
+                    _outputData.append(result)
+                elif _rawData[0] == int(DATA_RESULT['data-access-result']['index']):
+                    result = list(DATA_RESULT['data-access-result']['result'].keys())[
+                        list(DATA_RESULT['data-access-result']['result'].values()).index(_rawData[1])]
+                    _outputData.append(result)
+                    _rawData = _rawData[2:]
+                else:
+                    break
+            else:
+                break
+    return _outputData
+
+
+def trim_dataByteArray(_byteArray):
+
+    return
