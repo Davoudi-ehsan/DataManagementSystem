@@ -1,5 +1,4 @@
 import logging
-from tkinter.messagebox import NO
 import dbHelper
 import json
 from datetime import datetime
@@ -8,15 +7,14 @@ import messageFormation
 
 CLIENT_KEY = 0x1987
 
-DIF = {}
-VIF = {}
-
 
 class protocol:
     def __init__(self, _clientAddress):
         self.clientAddress = _clientAddress
         self.c_id = -1
         self.c_type = -1
+        self.frameCounter = 0x10
+        self.lastRequestAttribute = []
 
     def authenticate(self, _clientFrame):
         _authenticated = False
@@ -27,7 +25,8 @@ class protocol:
             _authenticated = True
             self.c_id = clientIdentity['c_id']
             self.c_type = clientIdentity['c_type']
-            _request = messageFormation.make_AUTHORIZATION_request(self.c_id)
+            _request, self.frameCounter = messageFormation.make_AUTHORIZATION_request(
+                self.c_id, self.frameCounter)
             tcpServer.AUTHENTICATED_CLIENTS.append(self.clientAddress)
             logging.info('client address %s authenticated' %
                          self.clientAddress)
@@ -82,11 +81,25 @@ class protocol:
                         }
                     _result = _db.executeQuery(query)
                 else:
-                    _request = messageFormation.make_Get_request(
-                        [('configuration', 'local-connected-downstream-devices', 1)])
+                    self.lastRequestAttribute = [
+                        ('abstract', 'configuration', 'local-connected-downstream-devices', 1)]
+                    _request, self.frameCounter = messageFormation.make_Get_request(
+                        self.lastRequestAttribute, self.frameCounter)
                 logging.info('client address %s authorized' %
                              self.clientAddress)
         return _authorized, _request
+
+    def devoting_to_response(self, _responseType, _clientPacket):
+        if _responseType == 'GET-response':
+            messageFormation.inspect_GET_response(_clientPacket)
+            pass
+        if _responseType == 'SET_response':
+            pass
+        if _responseType == 'ACTION-response':
+            pass
+        if _responseType == 'EVENT-NOTIFICATION-response':
+            pass
+        return
 
     def read_dbInfo(self):
         f = open('.env/db_info.json')
@@ -126,7 +139,8 @@ class protocol:
             _request = _db.executeQuery(query)
         elif tcpServer.AUTHENTICATED_CLIENTS.__contains__(self.clientAddress):
             tcpServer.AUTHENTICATED_CLIENTS.remove(self.clientAddress)
-        _disconnectionReason = messageFormation.make_ERROR_message(_errorCode)
+        _disconnectionReason, self.frameCounter = messageFormation.make_ERROR_message(
+            _errorCode, self.frameCounter)
         logging.warn(
             'client address %s disconnected duo to %s' % (self.clientAddress, _errorReason))
         return _disconnectionReason
