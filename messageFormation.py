@@ -182,11 +182,9 @@ def make_Get_request(_getReqPara, _frameCounter):
     return _reqFrame
 
 
-def inspect_GET_response(_dataFrame):
+def inspect_GET_response(_dataFrame: bytes):
     PROTOCOL = read_protocolInfo(
         ['protocol', 'TORAL', 'packet-format', 'APDU', 'GET-response', 'type'])
-    DATA_RESULT = read_protocolInfo(['data-result'])
-    DATA_TYPE = read_protocolInfo(['data-type'])
     # _category = [list(OBJECTS.keys())[list(OBJECTS.values()).index(i)]
     #              for i in OBJECTS.values() if i['A'] == _dataFrame[2]]
     # _item = [list(OBJECTS[_category[0]]['items'].keys())
@@ -194,26 +192,18 @@ def inspect_GET_response(_dataFrame):
     #          for i in OBJECTS[_category[0]]['items'].values() if i['B'] == _dataFrame[3]]
     # print(_category[0], _item[0])
     if _dataFrame[0] == int(PROTOCOL['normal']['index']):
-        if _dataFrame[1] == int(DATA_RESULT['data']['index']):
-            if _dataFrame[2] in list(DATA_TYPE.values()):
-
-                return
-        elif _dataFrame[1] == int(DATA_RESULT['data-access-result']['index']):
-            return "WRONG REQUEST"
+        return extract_dataResult(_dataFrame[1:], 'normal')
     elif _dataFrame[0] == int(PROTOCOL['with-list']['index']):
-        i = 1
-        # while i in range(_dataFrame.__len__()):
-        #     pass
+        return extract_dataResult(_dataFrame[1:], 'with-list')
     return None
 
 
-def extract_dataResult(_rawData, _responseType):
+def extract_dataResult(_rawData: bytes, _responseType: str):
     DATA_RESULT = read_protocolInfo(['data-result'])
-    DATA_TYPE = read_protocolInfo(['data-type'])
     _outputData = []
     if _responseType == 'normal':
         if _rawData[0] == int(DATA_RESULT['data']['index']):
-            _rawData, result = trim_dataByteArray(_rawData)
+            _rawData, result = trim_dataByteArray(_rawData[1:])
             _outputData.append(result)
         elif _rawData[0] == int(DATA_RESULT['data-access-result']['index']):
             result = list(DATA_RESULT['data-access-result']['result'].keys())[
@@ -223,10 +213,9 @@ def extract_dataResult(_rawData, _responseType):
         resultItemsNumber = _rawData[0]
         _rawData = _rawData[1:]
         for i in range(resultItemsNumber):
-            LENGTH = _rawData.__len__()
-            if LENGTH > 1:
+            if _rawData.__len__() > 1:
                 if _rawData[0] == int(DATA_RESULT['data']['index']):
-                    _rawData, result = trim_dataByteArray(_rawData)
+                    _rawData, result = trim_dataByteArray(_rawData[1:])
                     _outputData.append(result)
                 elif _rawData[0] == int(DATA_RESULT['data-access-result']['index']):
                     result = list(DATA_RESULT['data-access-result']['result'].keys())[
@@ -240,6 +229,75 @@ def extract_dataResult(_rawData, _responseType):
     return _outputData
 
 
-def trim_dataByteArray(_byteArray):
+def trim_dataByteArray(_byteArray: bytes):
+    DATA_TYPE = read_protocolInfo(['data-type'])
+    if _byteArray[0] in list(DATA_TYPE.values()):
+        if _byteArray[0] == DATA_TYPE['array']:
+            _byteArray, _resultItem = get_arrayElements(_byteArray[1:])
+            # _dataItems: object.append(_resultItem)
+        elif _byteArray[0] == DATA_TYPE['structure']:
+            _byteArray, _resultItem = get_structureElements(_byteArray)
+            # _dataItems: object.append(_resultItem)
+        else:
+            _byteArray, _resultItem = get_singelElement(_byteArray)
+            # _dataItems: object = _resultItem
+    return _byteArray, _resultItem
 
-    return
+
+def get_arrayElements(_data: bytes):
+    DATA_TYPE = read_protocolInfo(['data-type'])
+    _dataItems = []
+    if _data.__len__() < 3:
+        return [], []
+    if not _data[1] == DATA_TYPE['structure']:
+        return [], []
+    arrayLENGTH = _data[0]
+    _byteArray = _data[1:]
+    for i in range(arrayLENGTH):
+        _byteArray, _resultItem = get_structureElements(_byteArray)
+        _dataItems.append(_resultItem)
+    return _byteArray, _dataItems
+
+
+def get_structureElements(_data: bytes):
+    _dataItems = []
+    if _data.__len__() < 3:
+        return [], []
+    structureItems = _data[1]
+    _byteArray = _data[2:]
+    for i in range(structureItems):
+        _byteArray, _resultItem = get_singelElement(_byteArray)
+        _dataItems.append(_resultItem)
+    return _byteArray, _dataItems
+
+
+def get_singelElement(_data: bytes):
+    DATA_TYPE = read_protocolInfo(['data-type'])
+    _elementValue: object = None
+    _byteArray = []
+    if _data[0] == DATA_TYPE['null']:
+        _elementValue = 'null'
+        _byteArray = _data[1:] if _data.__len__() > 1 else []
+    elif _data[0] == DATA_TYPE['boolean'] and _data.__len__() > 1:
+        _elementValue = True if _data[1] else False
+        _byteArray = _data[2:] if _data.__len__() > 2 else []
+    elif _data[0] == DATA_TYPE['unsigned32'] and _data.__len__() > 4:
+        _elementValue = int.from_bytes(_data[1:5], 'big')
+        _byteArray = _data[5:] if _data.__len__() > 5 else []
+    elif _data[0] == DATA_TYPE['octet-string'] and _data.__len__() > 2:
+        if _data[1] < _data.__len__() - 2:
+            _elementValue = ''
+            for i in range(2, 2 + _data[1]):
+                _elementValue += '%02d' % _data[i]
+            _byteArray = _data[2+_data[1]:]
+    elif _data[0] == DATA_TYPE['visual-string'] and _data.__len__() > 2:
+        if _data[1] < _data.__len__() - 2:
+            _elementValue = _data[2:2+_data[1]].decode('utf-8')
+            _byteArray = _data[2+_data[1]:]
+    elif _data[0] == DATA_TYPE['unsigned16'] and _data.__len__() > 2:
+        _elementValue = int.from_bytes(_data[1:3], 'big')
+        _byteArray = _data[3:] if _data.__len__() > 3 else []
+    elif _data[0] == DATA_TYPE['unsigned'] and _data.__len__() > 1:
+        _elementValue = _data[1]
+        _byteArray = _data[2:] if _data.__len__() > 2 else []
+    return _byteArray, _elementValue

@@ -7,6 +7,8 @@ import messageFormation
 
 CLIENT_KEY = 0x1987
 
+EXTRA = {'modulename': __name__}
+
 
 class protocol:
     def __init__(self, _clientAddress):
@@ -28,8 +30,8 @@ class protocol:
             _request, self.frameCounter = messageFormation.make_AUTHORIZATION_request(
                 self.c_id, self.frameCounter)
             tcpServer.AUTHENTICATED_CLIENTS.append(self.clientAddress)
-            logging.info('client address %s authenticated' %
-                         self.clientAddress)
+        logging.info('client authentication result. address: %s, %s, identity: %s' %
+                     (self.clientAddress, _authenticated, clientIdentity), extra=EXTRA)
         return _authenticated, _request
 
     def authorize(self, _clientPacket):
@@ -85,13 +87,14 @@ class protocol:
                         ('abstract', 'configuration', 'local-connected-downstream-devices', 1)]
                     _request, self.frameCounter = messageFormation.make_Get_request(
                         self.lastRequestAttribute, self.frameCounter)
-                logging.info('client address %s authorized' %
-                             self.clientAddress)
+        logging.info('client authorization result. address: %s, %s' %
+                     (self.clientAddress, _authorized), extra=EXTRA)
         return _authorized, _request
 
     def devoting_to_response(self, _responseType, _clientPacket):
         if _responseType == 'GET-response':
-            messageFormation.inspect_GET_response(_clientPacket)
+            response_result = messageFormation.inspect_GET_response(
+                _clientPacket)
             pass
         if _responseType == 'SET_response':
             pass
@@ -142,5 +145,5 @@ class protocol:
         _disconnectionReason, self.frameCounter = messageFormation.make_ERROR_message(
             _errorCode, self.frameCounter)
         logging.warn(
-            'client address %s disconnected duo to %s' % (self.clientAddress, _errorReason))
+            'client address %s disconnected duo to %s' % (self.clientAddress, _errorReason), extra=EXTRA)
         return _disconnectionReason
