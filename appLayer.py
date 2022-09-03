@@ -21,32 +21,38 @@ class protocol:
     def authenticate(self, _clientFrame):
         _authenticated = False
         _request = []
+        # extract HEARBEAT elements from received packet
         clientIdentity = messageFormation.inspect_AUTHENTICATION_response(
             _clientFrame)
         if 'c_id' in clientIdentity and 'c_type' in clientIdentity:
             _authenticated = True
             self.c_id = clientIdentity['c_id']
             self.c_type = clientIdentity['c_type']
+            # make AUTHORIZATION-req for client
             _request, self.frameCounter = messageFormation.make_AUTHORIZATION_request(
                 self.c_id, self.frameCounter)
             tcpServer.AUTHENTICATED_CLIENTS.append(self.clientAddress)
-        logging.info('client authentication result. address: %s, %s, identity: %s' %
-                     (self.clientAddress, _authenticated, clientIdentity), extra=EXTRA)
+        logging.info('client %s. address: %s, identity: %s' % (
+            ('authenticated' if _authenticated else 'not authenticated'),
+            self.clientAddress,
+            clientIdentity),
+            extra=EXTRA)
         return _authenticated, _request
 
     def authorize(self, _clientPacket):
         _authorized = False
         _request = []
+        # extract AUTHORIZATION-res elements from received packet
         clientKey = messageFormation.inspect_AUTHORISATION_response(
             _clientPacket)
         if clientKey != -1:
             if clientKey == CLIENT_KEY:
-                _authorized = True
                 tcpServer.AUTHENTICATED_CLIENTS.remove(self.clientAddress)
                 tcpServer.AUTHORIZED_CLIENTS.append(
                     (self.clientAddress, self.c_id))
                 self.read_dbInfo()
                 _db = dbHelper.dbhelper()
+                # add new connection to connection log table
                 query = 'insert into %(table)s ' \
                     'values (%(val_1)i, %(val_2)i, "%(val_3)s", %(val_4)d, %(val_5)i)' \
                         % {
@@ -58,6 +64,10 @@ class protocol:
                             "val_5": datetime.timestamp(datetime.now())
                         }
                 _result = _db.executeQuery(query)
+                logging.info('connection logged, address: %s' %
+                             self.clientAddress,
+                             extra=EXTRA)
+                # check regitered device table for client existance
                 query = 'select * from %(table)s where %(condition)s = %(condition_val)i' \
                     % {
                         "table": self.DBtalbeNames[2],
@@ -65,6 +75,7 @@ class protocol:
                         "condition_val": self.int_to_BCDint(self.c_id)
                     }
                 if _db.selectData(query) is not None:
+                    # update information of device in registered table
                     query = 'update %(table)s set ' \
                         '%(col_2)s=%(val_2)i, %(col_3)s="%(val_3)s", %(col_4)s="%(val_4)s", %(col_5)s=%(val_5)i ' \
                             'where %(condition)s = %(condition_val)i' \
@@ -82,13 +93,35 @@ class protocol:
                             "condition_val": self.int_to_BCDint(self.c_id)
                         }
                     _result = _db.executeQuery(query)
+                    logging.info('client information updated, address: %s' %
+                                 self.clientAddress,
+                                 extra=EXTRA)
                 else:
+                    # add information of new device in registered table
+                    query = 'insert into %(table)s ' \
+                        'values (%(val_1)i, %(val_2)i, "%(val_3)s", %(val_4)d, %(val_5)i)' \
+                            % {
+                                "table": self.DBtalbeNames[2],
+                                "val_1": self.int_to_BCDint(self.c_id),
+                                "val_2": self.c_type,
+                                "val_3": self.clientAddress,
+                                "val_4": 'UNKNOWN',
+                                "val_5": datetime.timestamp(datetime.now())
+                            }
+                    _result = _db.executeQuery(query)
+                    logging.info('client registered, address: %s' %
+                                 self.clientAddress,
+                                 extra=EXTRA)
+                    # make GET-req to get more detail of new client
                     self.lastRequestAttribute = [
                         ('abstract', 'configuration', 'local-connected-downstream-devices', 1)]
                     _request, self.frameCounter = messageFormation.make_Get_request(
                         self.lastRequestAttribute, self.frameCounter)
-        logging.info('client authorization result. address: %s, %s' %
-                     (self.clientAddress, _authorized), extra=EXTRA)
+                _authorized = True
+        logging.info('client %s. address: %s' % (
+            ('authorized' if _authorized else 'not authorized'),
+            self.clientAddress),
+            extra=EXTRA)
         return _authorized, _request
 
     def devoting_to_response(self, _responseType, _clientPacket):
@@ -105,9 +138,12 @@ class protocol:
         return
 
     def read_dbInfo(self):
-        f = open('.env/db_info.json')
-        self.DBtables = json.load(f)['tables']
-        self.DBtalbeNames = list(self.DBtables)
+        try:
+            f = open('.env/db_info.json')
+            self.DBtables = json.load(f)['tables']
+            self.DBtalbeNames = list(self.DBtables)
+        except Exception:
+            logging.error('reading json file failed', extra=EXTRA)
 
     def int_to_BCDint(self, _value):
         _output = ''
@@ -128,6 +164,7 @@ class protocol:
         found_client = [x for x in tcpServer.AUTHORIZED_CLIENTS if x[0]
                         == self.clientAddress]
         if found_client.__len__() > 0:
+            # remove client from AUTHORIZED client list and change its activation status to DEACTIVE
             tcpServer.AUTHORIZED_CLIENTS.remove(found_client[0])
             self.read_dbInfo()
             query = 'update %(table)s set %(column)s = %(value)d where %(condition)s = "%(condition_val)s"' \
@@ -140,10 +177,13 @@ class protocol:
                 }
             _db = dbHelper.dbhelper()
             _request = _db.executeQuery(query)
+            logging.info('disconnection logged, address: %s' %
+                         self.clientAddress,
+                         extra=EXTRA)
         elif tcpServer.AUTHENTICATED_CLIENTS.__contains__(self.clientAddress):
             tcpServer.AUTHENTICATED_CLIENTS.remove(self.clientAddress)
         _disconnectionReason, self.frameCounter = messageFormation.make_ERROR_message(
             _errorCode, self.frameCounter)
         logging.warn(
-            'client address %s disconnected duo to %s' % (self.clientAddress, _errorReason), extra=EXTRA)
+            'client disconnected. address: %s, reason: %s' % (self.clientAddress, _errorReason), extra=EXTRA)
         return _disconnectionReason

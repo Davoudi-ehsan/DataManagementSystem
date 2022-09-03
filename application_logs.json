@@ -1,0 +1,2 @@
+{ "time": "2022-09-03 20:21:54", "level": "INFO", "module": "tcpServer", "message": "TCP Server created on port: 8001" }
+{ "time": "2022-09-03 20:22:07", "level": "INFO", "module": "tcpServer", "message": "TCP Server created on port: 8001" }
