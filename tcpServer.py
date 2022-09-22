@@ -3,19 +3,10 @@ import socketserver
 import appLayer
 import time
 import messageFormation
-from pathlib import Path
 
 AUTHORIZED_CLIENTS = []
 AUTHENTICATED_CLIENTS = []
 
-# config logging function
-BASE_DIR = Path(__file__).resolve().parent
-FORMAT = '''{ "time": "%(asctime)s", "level": "%(levelname)s", "module": "%(modulename)s", "message": "%(message)s" }'''
-logging.basicConfig(
-    filename=BASE_DIR / 'application_logs.json',
-    format=FORMAT,
-    level=logging.INFO,
-    datefmt='%Y-%m-%d %H:%M:%S')
 EXTRA = {'modulename': __name__}
 
 
@@ -54,6 +45,7 @@ class MyHandler(socketserver.BaseRequestHandler):
                 break
             logging.info('packet received. %i bytes, address: %s' %
                          (_dataReceived.__len__(), _clientAddress), extra=EXTRA)
+            self.appLayer.log_transition(('CtoS', _dataReceived))
             # analyze received packet
             _responseType, _responsePacket = messageFormation.extractReqData(
                 _dataReceived, self.appLayer.frameCounter)
@@ -63,7 +55,7 @@ class MyHandler(socketserver.BaseRequestHandler):
                 self.request.send(_reaction)
                 break
             logging.info('received packet type: %s, address: %s' %
-                         (_clientAddress, _responseType), extra=EXTRA)
+                         (_responseType, _clientAddress), extra=EXTRA)
             # inspection of content of received packet and making a reaction
             inspection = self.react_to_clientResponse(
                 _clientAddress, _responseType, _responsePacket)
@@ -76,6 +68,7 @@ class MyHandler(socketserver.BaseRequestHandler):
             self.request.send(self.serverRequest)
             logging.info(
                 "request sent. address: %s" % self.client_address[0], extra=EXTRA)
+            self.appLayer.log_transition(('StoC', self.serverRequest))
             self.serverRequest = bytearray()
         except Exception as e:
             logging.error('sending request failed', extra=EXTRA, exc_info=e)
@@ -90,8 +83,8 @@ class MyHandler(socketserver.BaseRequestHandler):
                 return 'DISCONNECT_CLIENT'
             authenticated, self.serverRequest = self.appLayer.authenticate(
                 _responsePacket)
-            # check client for c_id duplication and wrong AUTHENTICATION response
-            if any(x[1] for x in AUTHORIZED_CLIENTS if x[1] == self.appLayer.c_id) or \
+            # check client for client_id duplication and wrong AUTHENTICATION response
+            if any(x[1] for x in AUTHORIZED_CLIENTS if x[1] == self.appLayer.client_id) or \
                     not authenticated:
                 self.serverRequest = self.appLayer.disconnectClient(
                     400, 'AUTHENTICATION_FAILED')
@@ -119,9 +112,9 @@ class MyHandler(socketserver.BaseRequestHandler):
                     408, 'AUTHORIZATION_TIMEOUT')
                 return 'DISCONNECT_CLIENT'
         else:
-            # if not any(x[0] for x in AUTHORIZED_CLIENTS if x[0] == _clientAddress):
-            #     _reaction = self.appLayer.disconnectClient(
-            #         406, 'WRONG_RESPONSE')
-            #     self.request.send(_reaction)
-            #     return 'DISCONNECT_CLIENT'
+            if not any(x[0] for x in AUTHORIZED_CLIENTS if x[0] == _clientAddress):
+                _reaction = self.appLayer.disconnectClient(
+                    406, 'WRONG_RESPONSE')
+                self.request.send(_reaction)
+                return 'DISCONNECT_CLIENT'
             self.appLayer.devoting_to_response(_responseType, _responsePacket)

@@ -1,7 +1,7 @@
 import json
 import logging
 
-SERVER_KEY = 0x1987
+SERVER_KEY = 0x19871104
 
 EXTRA = {'modulename': __name__}
 
@@ -10,21 +10,21 @@ def extractReqData(_clientPacket, _frameCounter):
     PROTOCOL = read_protocolInfo(['protocol', 'TORAL', 'packet-format'])
     _packetBytes_count = _clientPacket.__len__()
     # check if recieved bytes less than 10 bytes
-    if _packetBytes_count < 9:
+    if _packetBytes_count < 8:
         return None, []
     _FLAG = _clientPacket[0]
     # check recieved bytes start and end with _FLAG byte
     if _FLAG != int(
             PROTOCOL['packet-flag']['start']['hex-index'], 16):
         return None, []
-    if _clientPacket[_packetBytes_count-1] != _FLAG:
+    if _clientPacket[-1] != _FLAG:
         return None
     # check if number of recieved bytes are corresponding with LENGTH byte
     if _clientPacket[1] != (_packetBytes_count - 5):
         return None, []
     _dataPacket = _clientPacket[2:_packetBytes_count-2]
     # check if CS byte calculated correct
-    if (_clientPacket[_packetBytes_count-2] != checksum(_dataPacket)):
+    if (_clientPacket[-2] != checksum(_dataPacket)):
         return None, []
     # check if the frame counter byte is correct
     if _clientPacket[2] != _frameCounter + 32:
@@ -76,7 +76,7 @@ def attribute_descriptor_to_bytes(_attributeDescriptor):
     _output = bytearray()
     ATTRIBUTE = read_protocolInfo(['attribute-descriptor'])
     _device, _category, _object, _attribute = _attributeDescriptor
-    if ATTRIBUTE is not None:
+    if ATTRIBUTE:
         _output.append(int(
             ATTRIBUTE[_device]['A']))
         _output.append(int(
@@ -91,11 +91,11 @@ def makeMessagePacket(request):
     def request_frame(_input, _frameCounter):
         _frame = bytearray()
         PROTOCOL = read_protocolInfo(['protocol', 'TORAL', 'packet-format'])
-        if PROTOCOL is not None:
+        if PROTOCOL:
             _frame.append(int(
                 PROTOCOL['packet-flag']['start']['hex-index'], 16))
             _frame.append(0)
-            if _frameCounter < 0xfe:
+            if _frameCounter < 0xdc:
                 _frameCounter += 34
             else:
                 _frameCounter = 0x10
@@ -122,29 +122,17 @@ def make_ERROR_message(_errorCode, _frameCounter):
 
 
 def inspect_AUTHENTICATION_response(_dataFrame):
-    clientIdentity = {}
+    clientId = -1
     PROTOCOL = read_protocolInfo(
         ['protocol', 'TORAL', 'packet-format', 'APDU', 'HEARTBEAT', 'element'])
-    if PROTOCOL is not None:
+    if PROTOCOL:
         if _dataFrame.__len__() == 5:
-            i = 0
-            while i < _dataFrame.__len__():
-                if _dataFrame[i] == int(
-                        PROTOCOL['client-id']['hex-index'], 16):
-                    if _dataFrame[i+1:].__len__() < 2:
-                        break
-                    clientIdentity['c_id'] = int.from_bytes(
-                        _dataFrame[i+1:i+3], 'big')
-                    i += 3
-                elif _dataFrame[i] == int(
-                        PROTOCOL['client-type']['hex-index'], 16):
-                    if _dataFrame[i+1:].__len__() < 1:
-                        break
-                    clientIdentity['c_type'] = int(_dataFrame[i+1])
-                    i += 2
-                else:
-                    break
-    return clientIdentity
+            if _dataFrame[0] == int(
+                    PROTOCOL['client-id']['hex-index'], 16):
+                if _dataFrame[1:].__len__() == 4:
+                    clientId = int.from_bytes(
+                        _dataFrame[1:], 'big')
+    return clientId
 
 
 @makeMessagePacket
@@ -152,12 +140,12 @@ def make_AUTHORIZATION_request(_input, _frameCounter):
     _reqFrame = bytearray()
     PROTOCOL = read_protocolInfo(
         ['protocol', 'TORAL', 'packet-format', 'APDU', 'AARQ'])
-    if PROTOCOL is not None:
+    if PROTOCOL:
         _reqFrame.append(int(
             PROTOCOL['hex-index'], 16))
         _reqFrame.append(int(
             PROTOCOL['element']['authorisation-value']['hex-index'], 16))
-        _reqFrame += (_input ^ SERVER_KEY).to_bytes(2, 'big')
+        _reqFrame += (_input ^ SERVER_KEY).to_bytes(4, 'big')
     return _reqFrame
 
 
@@ -165,8 +153,8 @@ def inspect_AUTHORISATION_response(_dataFrame):
     client_key = -1
     PROTOCOL = read_protocolInfo(
         ['protocol', 'TORAL', 'packet-format', 'APDU'])
-    if PROTOCOL is not None:
-        if _dataFrame.__len__() == 3:
+    if PROTOCOL:
+        if _dataFrame.__len__() == 5:
             if _dataFrame[0] == int(
                     PROTOCOL['AARE']['element']['authorisation-value']['hex-index'], 16):
                 client_key = int.from_bytes(_dataFrame[1:], 'big')
@@ -178,7 +166,7 @@ def make_Get_request(_getReqPara, _frameCounter):
     _reqFrame = bytearray()
     PROTOCOL = read_protocolInfo(
         ['protocol', 'TORAL', 'packet-format', 'APDU', 'GET-request'])
-    if PROTOCOL is not None:
+    if PROTOCOL:
         _reqItemsLen = _getReqPara.__len__()
         _reqFrame.append(int(
             PROTOCOL['hex-index'], 16))
@@ -190,7 +178,7 @@ def make_Get_request(_getReqPara, _frameCounter):
             _reqFrame += attribute_descriptor_to_bytes(_getReqPara[0])
         else:
             _reqFrame.append(int(
-                PROTOCOL['types']['with-list']['index']))
+                PROTOCOL['type']['with-list']['index']))
             _reqFrame.append(_reqItemsLen)
             for _attributeDescriptor in _getReqPara:
                 _reqFrame += attribute_descriptor_to_bytes(
@@ -207,7 +195,7 @@ def inspect_GET_response(_dataFrame: bytes):
     #          [list(OBJECTS[_category[0]]['items'].values()).index(i)]
     #          for i in OBJECTS[_category[0]]['items'].values() if i['B'] == _dataFrame[3]]
     # print(_category[0], _item[0])
-    if PROTOCOL is not None:
+    if PROTOCOL:
         if _dataFrame[0] == int(PROTOCOL['normal']['index']):
             return extract_dataResult(_dataFrame[1:], 'normal')
         elif _dataFrame[0] == int(PROTOCOL['with-list']['index']):
@@ -218,7 +206,7 @@ def inspect_GET_response(_dataFrame: bytes):
 def extract_dataResult(_rawData: bytes, _responseType: str):
     _outputData = []
     DATA_RESULT = read_protocolInfo(['data-result'])
-    if DATA_RESULT is not None:
+    if DATA_RESULT:
         if _responseType == 'normal':
             if _rawData[0] == int(DATA_RESULT['data']['index']):
                 _rawData, result = trim_dataByteArray(_rawData[1:])
@@ -250,7 +238,7 @@ def extract_dataResult(_rawData: bytes, _responseType: str):
 def trim_dataByteArray(_byteArray: bytes):
     _resultItem: object = None
     DATA_TYPE = read_protocolInfo(['data-type'])
-    if DATA_TYPE is not None:
+    if DATA_TYPE:
         if _byteArray[0] in list(DATA_TYPE.values()):
             if _byteArray[0] == DATA_TYPE['array']:
                 _byteArray, _resultItem = get_arrayElements(_byteArray[1:])
@@ -265,7 +253,7 @@ def get_arrayElements(_data: bytes):
     _dataItems = []
     _byteArray = []
     DATA_TYPE = read_protocolInfo(['data-type'])
-    if DATA_TYPE is not None:
+    if DATA_TYPE:
         if _data.__len__() < 3:
             return [], []
         if not _data[1] == DATA_TYPE['structure']:
@@ -294,7 +282,7 @@ def get_singelElement(_data: bytes):
     _elementValue: object = None
     _byteArray = []
     DATA_TYPE = read_protocolInfo(['data-type'])
-    if DATA_TYPE is not None:
+    if DATA_TYPE:
         if _data[0] == DATA_TYPE['null']:
             _elementValue = 'null'
             _byteArray = _data[1:] if _data.__len__() > 1 else []
@@ -305,13 +293,13 @@ def get_singelElement(_data: bytes):
             _elementValue = int.from_bytes(_data[1:5], 'big')
             _byteArray = _data[5:] if _data.__len__() > 5 else []
         elif _data[0] == DATA_TYPE['octet-string'] and _data.__len__() > 2:
-            if _data[1] < _data.__len__() - 2:
+            if _data[1] < _data.__len__() - 1:
                 _elementValue = ''
                 for i in range(2, 2 + _data[1]):
                     _elementValue += '%02d' % _data[i]
                 _byteArray = _data[2+_data[1]:]
         elif _data[0] == DATA_TYPE['visual-string'] and _data.__len__() > 2:
-            if _data[1] < _data.__len__() - 2:
+            if _data[1] < _data.__len__() - 1:
                 _elementValue = _data[2:2+_data[1]].decode('utf-8')
                 _byteArray = _data[2+_data[1]:]
         elif _data[0] == DATA_TYPE['unsigned16'] and _data.__len__() > 2:

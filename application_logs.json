@@ -1,2 +1,83 @@
-{ "time": "2022-09-03 20:21:54", "level": "INFO", "module": "tcpServer", "message": "TCP Server created on port: 8001" }
-{ "time": "2022-09-03 20:22:07", "level": "INFO", "module": "tcpServer", "message": "TCP Server created on port: 8001" }
+{ "time": "2022-09-22 15:09:47", "level": "INFO", "module": "dbHelper", "message": "checking existance of main tables finished" }
+{ "time": "2022-09-22 15:09:47", "level": "INFO", "module": "tcpServer", "message": "TCP Server created on port: 8001" }
+{ "time": "2022-09-22 15:09:53", "level": "INFO", "module": "tcpServer", "message": "client connected! address: 192.168.1.102" }
+{ "time": "2022-09-22 15:09:55", "level": "INFO", "module": "tcpServer", "message": "packet received. 11 bytes, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:09:55", "level": "INFO", "module": "tcpServer", "message": "received packet type: AUTHENTICATION, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:09:55", "level": "INFO", "module": "appLayer", "message": "client authenticated. identity: 12345678, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:09:55", "level": "INFO", "module": "tcpServer", "message": "request is available! address: 192.168.1.102" }
+{ "time": "2022-09-22 15:09:55", "level": "INFO", "module": "tcpServer", "message": "request sent. address: 192.168.1.102" }
+{ "time": "2022-09-22 15:09:58", "level": "INFO", "module": "tcpServer", "message": "packet received. 11 bytes, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:09:58", "level": "WARNING", "module": "appLayer", "message": "client disconnected. reason: WRONG_RESPONSE, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:10:23", "level": "INFO", "module": "tcpServer", "message": "client connected! address: 192.168.1.102" }
+{ "time": "2022-09-22 15:10:36", "level": "INFO", "module": "tcpServer", "message": "packet received. 11 bytes, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:10:36", "level": "INFO", "module": "tcpServer", "message": "received packet type: AUTHENTICATION, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:10:36", "level": "INFO", "module": "appLayer", "message": "client authenticated. identity: 12345678, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:10:36", "level": "INFO", "module": "tcpServer", "message": "request is available! address: 192.168.1.102" }
+{ "time": "2022-09-22 15:10:36", "level": "INFO", "module": "tcpServer", "message": "request sent. address: 192.168.1.102" }
+{ "time": "2022-09-22 15:10:39", "level": "INFO", "module": "tcpServer", "message": "packet received. 11 bytes, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:10:39", "level": "INFO", "module": "tcpServer", "message": "received packet type: AUTHORIZATION, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:10:39", "level": "INFO", "module": "appLayer", "message": "gateway information updated, id: 12345678" }
+{ "time": "2022-09-22 15:10:39", "level": "INFO", "module": "appLayer", "message": "gateway activity logged, id: 12345678" }
+{ "time": "2022-09-22 15:10:39", "level": "INFO", "module": "appLayer", "message": "client authorized. identity: 12345678, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:10:41", "level": "INFO", "module": "tcpServer", "message": "packet received. 11 bytes, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:10:41", "level": "INFO", "module": "appLayer", "message": "gateway activity logged, id: 12345678" }
+{ "time": "2022-09-22 15:10:41", "level": "INFO", "module": "tcpServer", "message": "received packet type: AUTHORIZATION, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:10:41", "level": "INFO", "module": "appLayer", "message": "gateway activity logged, id: 12345678" }
+{ "time": "2022-09-22 15:10:41", "level": "WARNING", "module": "appLayer", "message": "client disconnected. reason: WRONG_RESPONSE, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:10:41", "level": "INFO", "module": "tcpServer", "message": "request sent. address: 192.168.1.102" }
+{ "time": "2022-09-22 15:10:41", "level": "INFO", "module": "appLayer", "message": "gateway activity logged, id: 12345678" }
+{ "time": "2022-09-22 15:11:11", "level": "INFO", "module": "tcpServer", "message": "client connected! address: 192.168.1.102" }
+{ "time": "2022-09-22 15:11:15", "level": "INFO", "module": "tcpServer", "message": "packet received. 11 bytes, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:11:15", "level": "INFO", "module": "tcpServer", "message": "received packet type: AUTHENTICATION, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:11:15", "level": "INFO", "module": "appLayer", "message": "client authenticated. identity: 12345678, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:11:15", "level": "INFO", "module": "tcpServer", "message": "request is available! address: 192.168.1.102" }
+{ "time": "2022-09-22 15:11:15", "level": "INFO", "module": "tcpServer", "message": "request sent. address: 192.168.1.102" }
+{ "time": "2022-09-22 15:11:18", "level": "INFO", "module": "tcpServer", "message": "packet received. 11 bytes, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:11:18", "level": "WARNING", "module": "appLayer", "message": "client disconnected. reason: WRONG_RESPONSE, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:11:47", "level": "INFO", "module": "tcpServer", "message": "client connected! address: 192.168.1.102" }
+{ "time": "2022-09-22 15:11:52", "level": "INFO", "module": "tcpServer", "message": "packet received. 11 bytes, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:11:52", "level": "WARNING", "module": "appLayer", "message": "client disconnected. reason: WRONG_RESPONSE, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:11:56", "level": "INFO", "module": "tcpServer", "message": "client connected! address: 192.168.1.102" }
+{ "time": "2022-09-22 15:12:10", "level": "INFO", "module": "tcpServer", "message": "packet received. 11 bytes, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:12:10", "level": "INFO", "module": "tcpServer", "message": "received packet type: AUTHENTICATION, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:12:10", "level": "INFO", "module": "appLayer", "message": "client authenticated. identity: 12345678, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:12:10", "level": "INFO", "module": "tcpServer", "message": "request is available! address: 192.168.1.102" }
+{ "time": "2022-09-22 15:12:10", "level": "INFO", "module": "tcpServer", "message": "request sent. address: 192.168.1.102" }
+{ "time": "2022-09-22 15:12:14", "level": "INFO", "module": "tcpServer", "message": "packet received. 11 bytes, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:12:14", "level": "INFO", "module": "tcpServer", "message": "received packet type: AUTHORIZATION, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:12:14", "level": "INFO", "module": "appLayer", "message": "gateway information updated, id: 12345678" }
+{ "time": "2022-09-22 15:12:14", "level": "INFO", "module": "appLayer", "message": "gateway activity logged, id: 12345678" }
+{ "time": "2022-09-22 15:12:14", "level": "INFO", "module": "appLayer", "message": "client authorized. identity: 12345678, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:12:17", "level": "INFO", "module": "tcpServer", "message": "packet received. 11 bytes, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:12:17", "level": "INFO", "module": "appLayer", "message": "gateway activity logged, id: 12345678" }
+{ "time": "2022-09-22 15:12:17", "level": "INFO", "module": "tcpServer", "message": "received packet type: AUTHORIZATION, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:12:17", "level": "INFO", "module": "appLayer", "message": "gateway activity logged, id: 12345678" }
+{ "time": "2022-09-22 15:12:17", "level": "WARNING", "module": "appLayer", "message": "client disconnected. reason: WRONG_RESPONSE, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:12:17", "level": "INFO", "module": "tcpServer", "message": "request sent. address: 192.168.1.102" }
+{ "time": "2022-09-22 15:12:17", "level": "INFO", "module": "appLayer", "message": "gateway activity logged, id: 12345678" }
+{ "time": "2022-09-22 15:13:03", "level": "INFO", "module": "tcpServer", "message": "client connected! address: 192.168.1.102" }
+{ "time": "2022-09-22 15:13:08", "level": "INFO", "module": "tcpServer", "message": "packet received. 11 bytes, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:13:08", "level": "INFO", "module": "tcpServer", "message": "received packet type: AUTHENTICATION, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:13:08", "level": "INFO", "module": "appLayer", "message": "client authenticated. identity: 12345678, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:13:08", "level": "INFO", "module": "tcpServer", "message": "request is available! address: 192.168.1.102" }
+{ "time": "2022-09-22 15:13:08", "level": "INFO", "module": "tcpServer", "message": "request sent. address: 192.168.1.102" }
+{ "time": "2022-09-22 15:13:14", "level": "INFO", "module": "tcpServer", "message": "packet received. 11 bytes, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:13:14", "level": "WARNING", "module": "appLayer", "message": "client disconnected. reason: WRONG_RESPONSE, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:13:26", "level": "INFO", "module": "tcpServer", "message": "client connected! address: 192.168.1.102" }
+{ "time": "2022-09-22 15:13:30", "level": "INFO", "module": "tcpServer", "message": "packet received. 11 bytes, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:13:30", "level": "INFO", "module": "tcpServer", "message": "received packet type: AUTHENTICATION, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:13:30", "level": "INFO", "module": "appLayer", "message": "client authenticated. identity: 12345678, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:13:30", "level": "INFO", "module": "tcpServer", "message": "request is available! address: 192.168.1.102" }
+{ "time": "2022-09-22 15:13:30", "level": "INFO", "module": "tcpServer", "message": "request sent. address: 192.168.1.102" }
+{ "time": "2022-09-22 15:13:32", "level": "INFO", "module": "tcpServer", "message": "packet received. 11 bytes, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:13:32", "level": "INFO", "module": "tcpServer", "message": "received packet type: AUTHORIZATION, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:13:32", "level": "INFO", "module": "appLayer", "message": "gateway information updated, id: 12345678" }
+{ "time": "2022-09-22 15:13:32", "level": "INFO", "module": "appLayer", "message": "gateway activity logged, id: 12345678" }
+{ "time": "2022-09-22 15:13:32", "level": "INFO", "module": "appLayer", "message": "client authorized. identity: 12345678, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:13:59", "level": "INFO", "module": "tcpServer", "message": "packet received. 11 bytes, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:13:59", "level": "INFO", "module": "appLayer", "message": "gateway activity logged, id: 12345678" }
+{ "time": "2022-09-22 15:13:59", "level": "INFO", "module": "tcpServer", "message": "received packet type: AUTHORIZATION, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:13:59", "level": "INFO", "module": "appLayer", "message": "gateway activity logged, id: 12345678" }
+{ "time": "2022-09-22 15:13:59", "level": "WARNING", "module": "appLayer", "message": "client disconnected. reason: WRONG_RESPONSE, address: 192.168.1.102" }
+{ "time": "2022-09-22 15:13:59", "level": "INFO", "module": "tcpServer", "message": "request sent. address: 192.168.1.102" }
+{ "time": "2022-09-22 15:13:59", "level": "INFO", "module": "appLayer", "message": "gateway activity logged, id: 12345678" }
