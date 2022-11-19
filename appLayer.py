@@ -74,7 +74,7 @@ class protocol:
                                 "val_2": True,
                                 "col_3": self.DBtables[list(self.DBtables.keys())[1]]['col_3'],
                                 "val_3": self.clientAddress,
-                                "col_4": self.DBtables[list(self.DBtables.keys())[1]]['col_9'],
+                                "col_4": self.DBtables[list(self.DBtables.keys())[1]]['col_8'],
                                 "val_4": clientKey,
                                 "col_5": self.DBtables[list(self.DBtables.keys())[1]]['col_13'],
                                 "val_5": datetime.timestamp(datetime.now())
@@ -109,7 +109,7 @@ class protocol:
                             "val_2": True,
                             "col_3": self.DBtables[list(self.DBtables.keys())[1]]['col_3'],
                             "val_3": self.clientAddress,
-                            "col_4": self.DBtables[list(self.DBtables.keys())[1]]['col_9'],
+                            "col_4": self.DBtables[list(self.DBtables.keys())[1]]['col_8'],
                             "val_4": clientKey,
                             "col_5": self.DBtables[list(self.DBtables.keys())[1]]['col_13'],
                             "val_5": datetime.timestamp(datetime.now()),
@@ -130,16 +130,18 @@ class protocol:
         return self.authorized, _request
 
     def devoting_to_response(self, _responseType, _clientPacket):
-        if _responseType == 'GET-response':
-            response_result = messageFormation.inspect_GET_response(
-                _clientPacket)
-            pass
-        if _responseType == 'SET_response':
-            pass
-        if _responseType == 'ACTION-response':
-            pass
-        if _responseType == 'EVENT-NOTIFICATION-response':
-            pass
+        if self.lastRequestAttribute:
+            if _responseType == 'GET-response':
+                response_result = messageFormation.inspect_GET_response(
+                    _clientPacket)
+                if self.lastRequestAttribute.__len__() == response_result.__len__():
+
+                    self.lastRequestAttribute = None
+                    pass
+            if _responseType == 'SET_response':
+                pass
+            if _responseType == 'ACTION-response':
+                pass
         return
 
     def read_dbInfo(self):
@@ -185,7 +187,6 @@ class protocol:
                     "condition_val": self.int_to_BCDint(self.client_id)
                 }
             _db.executeQuery(query)
-            self.log_transition(('StoC', _disconnectionReason))
         elif tcpServer.AUTHENTICATED_CLIENTS.__contains__(self.clientAddress):
             tcpServer.AUTHENTICATED_CLIENTS.remove(self.clientAddress)
         logging.warn(

@@ -40,7 +40,7 @@ class MyHandler(socketserver.BaseRequestHandler):
             # wait for receiption of client packet
             _dataReceived = self.request.recv(1024)
             if not _dataReceived:
-                _reaction = self.appLayer.disconnectClient(
+                self.appLayer.disconnectClient(
                     204, 'CLIENT_DISCONNECTION')
                 break
             logging.info('packet received. %i bytes, address: %s' %
@@ -50,9 +50,9 @@ class MyHandler(socketserver.BaseRequestHandler):
             _responseType, _responsePacket = messageFormation.extractReqData(
                 _dataReceived, self.appLayer.frameCounter)
             if _responseType is None:
-                _reaction = self.appLayer.disconnectClient(
+                self.serverRequest = self.appLayer.disconnectClient(
                     406, 'WRONG_RESPONSE')
-                self.request.send(_reaction)
+                self.send_serverRequest()
                 break
             logging.info('received packet type: %s, address: %s' %
                          (_responseType, _clientAddress), extra=EXTRA)
@@ -70,6 +70,7 @@ class MyHandler(socketserver.BaseRequestHandler):
                 "request sent. address: %s" % self.client_address[0], extra=EXTRA)
             self.appLayer.log_transition(('StoC', self.serverRequest))
             self.serverRequest = bytearray()
+            self.t0 = time.time()
         except Exception as e:
             logging.error('sending request failed', extra=EXTRA, exc_info=e)
 
@@ -90,7 +91,6 @@ class MyHandler(socketserver.BaseRequestHandler):
                     400, 'AUTHENTICATION_FAILED')
                 return 'DISCONNECT_CLIENT'
             # self.request.send(AUTHORIZATION_request)
-            self.t0 = time.time()
         elif _responseType == 'AUTHORIZATION':
             # check client for already AUTHORIZATION or AUTHENTICATION
             if any(x[0] for x in AUTHORIZED_CLIENTS if x[0] == _clientAddress) or \
@@ -113,8 +113,11 @@ class MyHandler(socketserver.BaseRequestHandler):
                 return 'DISCONNECT_CLIENT'
         else:
             if not any(x[0] for x in AUTHORIZED_CLIENTS if x[0] == _clientAddress):
-                _reaction = self.appLayer.disconnectClient(
+                self.serverRequest = self.appLayer.disconnectClient(
                     406, 'WRONG_RESPONSE')
-                self.request.send(_reaction)
                 return 'DISCONNECT_CLIENT'
-            self.appLayer.devoting_to_response(_responseType, _responsePacket)
+            if _responseType == 'EVENT-NOTIFICATION-response':
+                pass
+            else:
+                self.appLayer.devoting_to_response(
+                    _responseType, _responsePacket)
